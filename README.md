@@ -44,3 +44,32 @@ resolve: {
 ```
 在main.js中```import Vue from 'vue'```引用的是vue/dist/vue.esm.js，直接指定了文件的位置，没有使用main字段默认的文件位置，使用的是complier模式。
 
+## CSS
+### 设置input中placeholder的样式
+```css
+::-webkit-input-placeholder { /* Chrome/Opera/Safari */ 
+  /* 样式 */
+}
+::-moz-placeholder { /* Firefox 19+ */  
+  /* 样式 */
+}
+:-ms-input-placeholder { /* IE 10+ */ 
+  /* 样式 */
+}
+:-moz-placeholder { /* Firefox 18- */ 
+  /* 样式 */
+}
+```
+
+#### input placeholder支持的属性
+* font properties
+* color
+* background properties
+* word-spacing
+* letter-spacing
+* text-decoration
+* vertical-align
+* text-transform
+* line-height
+* text-indent
+* opacity
