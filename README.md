@@ -1,12 +1,18 @@
-# 前端
-## Vue.js
-### 初始化vue项目
+# 1. 前端
+## 1.1 Vue.js
+### 1.1.1 初始化vue项目
 1. ```npm install -g vue-cli```       全局安装vue脚手架
 2. ```vue init webpack my-project```  初始化vue项目
 3. ```npm install```                  安装项目依赖，把package.json需要的依赖 安装到 node_modules
 4. ```npm run dev```
 
-### vue的两种代码模式compiler和runtime
+> vue3.0以上版本**Vue CLI**的包名称由 ```vue-cli``` 改成 ```@vue/cli``` 。如果全局安装了旧版本的```vue-cli```(1.x或2.x)，你需要先通过 ```npm uninstall vue-cli -g``` 卸载它。  
+* 安装新版本的Vue CLI并初始化项目  
+  * ```npm install -g @vue/cli```
+  * ```vue create myproject```
+
+
+### 1.1.2 vue的两种代码模式compiler和runtime
 vue升级到2.0之后可能出现的报错信息
 > [Vue warn]: You are using the runtime-only build of Vue where the template compiler is not available. Either pre-compile the templates into render functions, or use the compiler-included build.
 #### 原因
@@ -44,8 +50,8 @@ resolve: {
 ```
 在main.js中```import Vue from 'vue'```引用的是vue/dist/vue.esm.js，直接指定了文件的位置，没有使用main字段默认的文件位置，使用的是complier模式。
 
-## CSS
-### 设置input中placeholder的样式
+## 1.2 CSS
+### 1.2.1 设置input中placeholder的样式
 ```css
 ::-webkit-input-placeholder { /* Chrome/Opera/Safari */ 
   /* 样式 */
