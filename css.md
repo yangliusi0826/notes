@@ -48,7 +48,7 @@ img {
 ```object-fit: contain``` 图片会被缩放，保持其宽高比，如果图片宽高比与框的宽高比不匹配将会出现留白。  
 ```object-fit: cover```图片大小保持其宽高比来填充整个框，如果如果图片宽高比与框的宽高比不匹配，图片会被剪裁以适应。  
 
-2. 在小程序中object-fit属性不生效，可以使用background-size来实现
+2. 在微信小程序中object-fit属性不生效，可以使用background-size来实现
 ``` html
 <div class="test-img"></div>
 ```
@@ -69,7 +69,7 @@ img {
   height: auto;
 }
 ```
-**注意：** 在小程序中```<image>```标签无法自适应高度，不设置固定高度则高度为0，小程序图片高度自适应需要设置一个属性```mode="widthFix"```
+**注意：** 在微信小程序中```<image>```标签无法自适应高度，不设置固定高度则高度为0，微信小程序中图片高度自适应需要设置一个属性```mode="widthFix"```
 ``` html
 <image src="test.png" mode="widthFix" />
 ```
