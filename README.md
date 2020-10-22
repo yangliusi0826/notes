@@ -1,4 +1,17 @@
-## 记录前端学习过程中的知识点  
-### [vue.md](./vue.md)为vue.js相关笔记
-### [css.md](./css.md)为css相关知识点
-### [JavaScript.md](./JavaScript.md)为js相关知识点
+# 前端学习
+<p align="center">
+我深怕自己本非美玉，故而不敢加以刻苦琢磨，<br/>
+却又半信自己是块美玉，故又不肯庸庸碌碌，与瓦砾为伍。<br/>
+其实我们每个人都是驯兽师，而那“野兽”无非是各人的性情而已。<br/>
+<p align="right">——中岛敦 《山月记》</p>
+</p>
+
+
+## Vue
+
+
+## JavaScript
+* [内存空间分配](./docs/1.md)
+
+## CSS
+
