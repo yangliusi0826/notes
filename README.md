@@ -12,6 +12,7 @@
 
 ## JavaScript
 * [内存空间分配](./docs/1.md)
+* [手写深拷贝](./docs/2.md)
 
 ## CSS
 
