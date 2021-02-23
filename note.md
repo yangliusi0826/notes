@@ -1,4 +1,4 @@
-# js 的数据类型
+# 一、js 的数据类型
 
 js 可以分为两种数据类型，基本数据类型和引用数据类型。
 
@@ -157,3 +157,177 @@ function deepClone(originData, weakMap = new WeakMap()) {
 ```
 
 ## 6. 数据类型转换
+
+
+# 二、执行上下文
+
+当 JavaScript 代码执行一段可执行代码(excution code)时，会创建对应的执行上下文(excution content)。 
+
+## 执行上下文栈
+
+JavaScript 引擎创建了执行上下文栈(excution context stack, ECS)来管理执行上下文。  
+JavaScript 开始要解释执行代码时，最先遇到的就是全局代码，所以初始化的时候首先就会向执行上下文栈压入一个全局执行上下文。当执行一个函数时，就会创建一个执行上下文，并且压入执行上下文栈，函数执行完毕后，就会将函数额执行上下文从执行栈中弹出。当整个应用程序结束的时候，执行栈才会被清空，所以在程序结束之前，执行栈底部永远有一个全局执行上下文。
+
+## 执行上下文的重要属性
+
+对于每个执行上下文，都有三个重要的属性：
+* 变量对象（Variable Object, VO）
+* 作用域链（Scope chain）
+* this
+
+### 变量对象
+
+变量对象是与执行上下文相关的数据作用域，存储了在上下文中定义的变量和函数声明。
+变量对象的创建过程：
+1. 全局上下文的变量对象初始化时全局对象
+2. 函数上下文的变量对象初始化只包含 Arguments 对象
+3. 在进入执行上下文时会给变量对象添加形参，函数声明、变量声明等初始的属性值
+4. 在代码执行阶段，会再次修改变量对象的属性值
+
+```js
+function foo(a) {
+  var b = 2;
+  function c() {}
+  var d = function() {};
+
+  b = 3;
+
+}
+
+foo(1);
+
+// 在进入执行上下文后，这时候的 AO 是：
+AO = {
+  arguments: {
+    0: 1,
+    length: 1
+  },
+  a: 1,
+  b: undefined,
+  c: reference to function c() {},
+  d: undefined
+}
+
+// 代码执行阶段，会顺序执行代码，根据代码，修改变量对象的值
+AO = {
+  arguments: {
+    0: 1,
+    length: 1
+  },
+  a: 1,
+  b: 2,
+  c: reference to function c() {},
+  d: reference to FunctionExpression "d"
+}
+
+```
+
+### 作用域链
+
+当查找变量的时候，会先从当前上下文的变量对象中查找，如果没有找到，就会从父级（词法层面上的父级）执行上下文的变量对象中查找，一直找到全局上下文的变量对象，也就是全局对象。这样由多个执行上下文的变量对象构成的链表就叫做作用域链。  
+以一个函数的创建和激活两个时期来讲解作用域时如何创建和变化的
+
+#### 函数创建
+
+函数的作用域在函数定义时就决定了。  
+函数有一个内部属性 \[[scope]]，当函数创建的时候，就会保存所有父变量对象到其中，\[[scope]] 就是所有父变量对象的层级链，但 \[[scope]] 不代表完整的作用域链。
+```js
+function foo() {
+    function bar() {
+        ...
+    }
+}
+
+// 函数创建时，各自的 [[scope]]为：
+foo.[[scope]] = [
+  globalContext.VO
+]
+bar.[[scope]] = [
+  fooContext.AO,
+  globalContext.VO
+]
+```
+
+#### 函数激活
+
+当函数激活时，进入函数上下文，创建VO/AO后，就会将活动对象添加到作用域链的前端。  
+这时候执行上下文的作用域链，我们命名为 Scope:
+```js
+Scope = [AO].concat([[scope]]);
+```
+至此，作用域链创建完毕。
+
+
+## 举例
+```js
+var scope = "global scope";
+function checkscope(){
+    var scope2 = 'local scope';
+    return scope2;
+}
+checkscope();
+```
+执行过程如下：
+1. checkscope 函数被创建，保存作用域链到内部属性 \[[scope]]
+    ```js
+    checkscope.[[scope]] = [
+      globalContext.VO
+    ]
+    ```
+2. 执行 checkscope 函数，创建 checkscope 函数执行上下文，并将执行上下文压入执行栈
+    ```js
+    ECStack = [
+      checkscopeContext,
+      globalContext
+    ]
+    ```
+3. checkscope 函数不立刻执行，开始做准备工作，第一步：复制函数 \[[scope]] 属性创建作用域链
+    ```js
+    checkscopeContext = [
+      Scope: checkscope.[[scope]]
+    ]
+    ```
+4. 第二步：用 arguments 创建活动对象，随后初始化活动对象，加入形参、函数声明、变量声明
+    ```js 
+    checkscopeContext = [
+      AO: {
+        arguments: [
+          lenght: 0
+        ],
+        scope2: undefined
+      },
+      Scope: checkscope.[[scope]]
+    ]
+    ```
+5. 第三步：将活动对象压入 checkscope 作用域链顶端
+    ```js 
+    checkscopeContext = [
+      AO: {
+        arguments: [
+          lenght: 0
+        ],
+        scope2: undefined
+      },
+      Scope: [AO, checkscope.[[scope]]]
+    ]
+    ```
+6. 准备工作做完，开始执行函数，随着函数执行，修改 AO 的属性值
+    ```js 
+    checkscopeContext = [
+      AO: {
+        arguments: [
+          lenght: 0
+        ],
+        scope2: 'local scope'
+      },
+      Scope: [AO, globalContext.VO]
+    ]
+    ```
+7. 查找到 scope2 的值，返回后函数执行完毕，函数上下文从执行上下文栈中弹出
+    ```js
+    ECStack = [
+      globalContext
+    ]
+    ```
+
+## this
