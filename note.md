@@ -130,7 +130,30 @@ Object.prototype.toString.call(window) ;//[object global] window 是全局对象
 
 * undefined代表的含义是未定义的，一般变量声明了但还没有定义的时候会返回 undefined。
 
-## 5. [数据赋值、浅拷贝和深拷贝的区别](./docs/2.md)
+## 5. 数据赋值、浅拷贝和深拷贝的区别
+数据赋值、浅拷贝和深拷贝的区别，查看此[文章]((https://blog.csdn.net/yangliusi/article/details/109283434))
+深拷贝实现代码如下(只考虑了对象和数组的情况)：
+```js
+function deepClone(originData, weakMap = new WeakMap()) {
+  // 判断是否为引用类型
+  if (typeof originData === 'object' ) {
+    // 判断是否为数组，对象和数组初始值不一样
+    let copyData = Array.isArray(originData) ? [] : {};
 
+    // 判断容器中是否有已克隆过的数据，解决循环引用问题
+    if (weakMap.get(originData)) {
+      return weakMap.get(originData);
+    }
+    weakMap.set(originData, copyData);
+
+    for(let prop in originData) {
+      copyData[prop] = deepClone(originData[prop]);
+    }
+    return copyData;
+  } else {
+    return originData;
+  }
+}
+```
 
 ## 6. 数据类型转换
