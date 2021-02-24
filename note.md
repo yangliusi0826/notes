@@ -331,3 +331,115 @@ checkscope();
     ```
 
 ## this
+
+
+# 手写轮子
+
+## new 的模拟实现
+通过 new 来创建一个对象的过程：
+1. 创建一个新对象
+2. 将构造函数的作用域赋给新对象（因此 this 就指向了这个新对象）
+3. 执行构造函数中的代码（为这个新对象添加属性）
+4. 返回新对象
+
+```js
+function myNew() {
+  // 创建一个新对象
+  var obj = new Object();
+  // 取出传入的构造函数
+  var constructor = [].shift.call(arguments);
+  // 将 obj 的原型指向构造函数的原型，这样 obj 就可以访问到构造函数原型中的属性
+  obj.__proto__ = constructor.prototype;
+  // 执行构造函数，使用apply，改变构造函数 this 指向新的对象，这个 obj 就可以访问构造函数中的属性
+  var ret = constructor.apply(obj, arguments);
+
+  // 如果构造函数返回一个对象，在实例中只能访问返回对象中的属性，如果返回的是基本类型，没有影响。
+  return typeof ret === 'object' ? ret : obj;
+}
+```
+
+## call 的模拟实现
+call() 方法在使用一个指定的 this 和若干个指定的参数值的前提下调用某个函数和方法。
+```js
+var foo = {
+    value: 1
+};
+
+function bar() {
+    console.log(this.value);
+}
+
+bar.call(foo); // 1
+```
+call主要实现了两个步骤：1. 改变 this 指向第一个参数foo；2. 调用 call 的方法 bar 执行了
+实现思路： 将调用的方法 bar 设置为  第一个参数 foo 的属性，然后再执行 bar 方法, 这时 this 是指向 foo 的，执行结束后将 foo 中的属性删除。
+
+```js
+Function.prototype.myCall = function(context) {
+  // this参数可以传入 null, 当为 null 时视为指向 window
+  context = context || window;
+  // 1. 获取调用 call 的函数，用 this 可以获取; 2.将 调用的函数设为对象的属性
+  context.fn = this;
+  // 获取闯入执行函数的参数
+  var args = [];
+  for (var i = 1; i < arguments.length; i++) {
+    args.push('arguments[' + i + ']');
+  }
+
+  // 将参数传入并执行函数
+  var result = eval('context.fn(' + args + ')');
+  // 删除属性
+  delete context.fn;
+  return result;
+}
+```
+
+## apply 的模拟实现
+apply 与 call 的区别在与参数不一样，传入执行函数的参数，call 方法是多个值，apply 是一个数组
+
+```js
+Function.prototype.myApply = function(context, arr) {
+  // this参数可以传入 null, 当为 null 时视为指向 window
+  context = context || window;
+  // 1. 获取调用 call 的函数，用 this 可以获取; 2.将 调用的函数设为对象的属性
+  context.fn = this;
+
+  var result;
+  if (!arr) {
+    result = context.fn();
+  } else {
+    // 获取闯入执行函数的参数
+    var args = [];
+    for (var i = 0; i < arr.length; i++) {
+      args.push('arguments[' + i + ']');
+    }
+
+    // 将参数传入并执行函数
+    result = eval('context.fn(' + args + ')');
+  }
+
+  // 删除属性
+  delete context.fn;
+  return result;
+}
+```
+
+## bind 的模拟实现
+bind 方法也是改变 this 的指向，与 call 不同的是，bind 返回的是一个函数。
+
+```js
+Function.prototype.myCall = function(context) {
+  var self = this;
+  var args = Array.prototype.slice.call(arguments, 1);
+
+  var fBound = function（） {
+    // 获取调用返回函数传入的参数
+    var bindArgs = Array.prototype.slice.call(arguments);
+    // 如果是作为构造函数，this 指向实例，所以将绑定函数的 this 指向该实例
+    return self.apply(this instanceof bindArgs ? fBound : context, args.concat(bindArgs));
+  }
+
+  fBound.prototype = this.prototype;
+  return fBound;
+}
+```
