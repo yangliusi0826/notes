@@ -517,3 +517,109 @@ console.log(10);
 
 // 执行结果：1 4 10 5 6 7 2 3 9 8
 ```
+
+## Promise
+实现一个基于 Promise A+ 规范的 Promise
+* 1.基础框架
+new Promise() 时接受一个 executor函数作为参数，该函数会立即执行，函数中有两个参数，它们也是函数，分别是 resolve 和 reject，executor 函数同步执行一定要放在 try catch 中，否则无法进行错误捕获。
+
+* 2.添加状态机
+Promise 是一个状态机的机制，初始状态为 pending，成功状态为 fulfilled，失败状态为 rejected。只能从 pending -> fulfilled，者从 pending -> rejected，并且状态一旦转变，就永远不会再变了。
+
+* 3.添加 then 方法
+Promise 拥有一个 then 方法，接受两个参数 onFulfilled 和 onRejected，分别作为 Promise 成功和失败的回调。所以，在 then 方法中我们需要对状态 state 进行判断，如果是 fulfilled，则执行 onFulfilled(value)方法，如果是 rejected，则执行 onRejected(reason) 方法。
+
+* 4.实现异步调用 resolve
+  * 问题：同步调用 resolve 没有问题，但如果是异步调用，比如放到 setTimeout 中，因为目前的代码在调用 then() 方法时，state 仍是 pending 的状态，当 timer 到的时候调用 resolve()，把 state 修改为 fulfilled 状态，但是 onFulfilled() 函数已经没有时机调用了。
+  * 解决方案：添加两个回调函数数组 onFulfilledCallbacks 和 onRejectedCallbacks，用来存储 then() 方法传入的成功和失败回调。当用户调用 resolve() 或 reject() 修改 state 状态时，并从相应的回调函数数组中取出回调执行。通过这种方式我们也实现了可以注册多个then()函数，并且在成功或者失败时按照注册顺序依次执行。
+ * 5. then 返回的仍是 Promise ?
+* 
+```js
+const PENDING = 'pending';
+const FULFILLED = 'fulfilled';
+const REJECTED = 'rejected';
+
+function MyPromise(executor) {
+  let self = this;
+  self.state = PENDING;
+  self.value = null;
+  self.reason = null;
+  const onFulfilledCallbacks = [];
+  const onRejectedCallbacks = [];
+
+  function resolve(value) {
+    if (self.state === PENDING) {
+      self.state = FULFILLED;
+      self.value = value;
+
+      onFulfilledCallbacks.forEach(onFulfilled => {
+        onFulfilled();
+      });
+    }
+  }
+
+  function reject(reason) {
+    if (self.state === PENDING) {
+      self.state = REJECTED;
+      self.reason = reason;
+
+      onRejectedCallbacks.forEach(onRejected => {
+        onRejected();
+      });
+    }
+  }
+
+  try {
+    executor(resolve, reject);
+  } catch(reason) {
+    reject(reason);
+  }
+}
+
+MyPromise.prototype.then = function (onFulfilled, onRejected) {
+  let self = this;
+
+  let newPromise = new MyPromise((resolve, reject) => {
+    if (self.state === PENDING) {
+      self.onFulfilledCallbacks.push(() => {
+        setTimeout(() => {
+          try {
+            let value = onFulfilled(self.value);
+            self.resolePromise(newPromise, value, resolve, reject);
+          } catch(reason) {
+            reject(reason);
+          }
+        }, 0)
+        
+      });
+      self.onRejectedCallbacks.push(() => {
+        setTimeout(() => {
+          try {
+            let reason = onRejected(self.reason);
+            self.resolePromise(newPromise, reason, resolve, reject);
+          } catch(reason) {
+            reject(reason);
+          }
+        })
+      });
+    }
+  
+    if (self.state === FULFILLED) {
+      setTimeout(() => {
+        try {
+          let value = onFulfilled(self.value);
+          self.resolePromise(newPromise, value, resolve, reject);
+        } catch(reason) {
+          reject(reason);
+        }
+      }, 0)
+    }
+  
+    if (self.state === REJECTED) {
+      let reason = onRejected(self.reason);
+      self.resolePromise(newPromise, reason, resolve, reject);
+    }
+  })
+}
+
+```
