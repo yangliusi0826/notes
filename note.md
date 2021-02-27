@@ -623,3 +623,76 @@ MyPromise.prototype.then = function (onFulfilled, onRejected) {
 }
 
 ```
+
+# 语法和 API
+## 数组去重
+### 双层循环
+```js
+let arr = [1, '1', 1, 3];
+
+function unique(array) {
+  let res = []; // 存储结果
+  for (let i = 0; i < array.length; i++) {
+   for (var j = 0; j < res.length; j++) {
+     if (array[i] === res[j]) {
+       break;
+     }
+   }
+
+   // 如果array[i]是唯一的，那么执行完循环，j === res,length
+   if (j === res.length) {
+     res.push(array[i]);
+   }
+  }
+
+  return res;
+}
+
+unique(arr); // [1, "1", 3]
+```
+
+### indexOf
+```js
+let arr = [1, '1', 1, 3];
+
+function unique(array) {
+  let res = []; // 存储结果
+  for (let i = 0; i < array.length; i++) {
+   let current = array[i];
+   if (res.indexOf(current) === -1) {
+     res.push(current);
+   }
+  }
+
+  return res;
+}
+
+unique(arr); // [1, "1", 3]
+```
+
+### 排序后去重
+```js
+let arr = [1, '1', 1, 3];
+
+function unique(array) {
+  let res = []; // 存储结果
+  let sortArray = array.concat().sort();
+  let seen;
+  for (let i = 0; i < sortArray.length; i++) {
+   // 如果是第一个元素或是值相邻元素不相同
+   console.log('i', i);
+   console.log('seen', seen);
+   console.log('current', sortArray[i]);
+   console.log('---------------------------');
+   if (!i || seen !== sortArray[i]) {
+      res.push(sortArray[i]);
+    }
+    seen = sortArray[i];
+  }
+
+  return res;
+}
+
+unique(arr); // [1, "1", 3]
+```
+sort() 排序无法识别数字和字符串？
