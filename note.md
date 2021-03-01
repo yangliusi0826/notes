@@ -696,3 +696,330 @@ function unique(array) {
 unique(arr); // [1, "1", 3]
 ```
 sort() 排序无法识别数字和字符串？
+
+
+# Vue
+## Vue的双向数据绑定
+
+Vue 双向数据绑定是通过**数据劫持**结合**发布订阅模式**方式来实现的，也就是说数据和视图同步，数据发生变化，视图跟着变化，视图变化，数据也随之发生改变。
+核心：关于 Vue 双向数据绑定，其核心是 ```Object.defineProperty()``` 方法。
+
+### 简单实现一个 js 的双向数据绑定
+
+``` html
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue 双向数据绑定</title>
+</head>
+
+<body>
+    <div id="app">
+        <input type="text" id="a">
+        <span id="b"></span>
+    </div>
+</body>
+<script>
+  let obj = {};
+  let val = 'tianxin';
+  Object.defineProperty(obj, 'val', {
+    get: function() {
+      return val;
+    },
+    set: function(newVal) {
+      val = newVal;
+      document.getElementById('a').value = val;
+      document.getElementById('b').innerHTML = val;
+    }
+  });
+  document.addEventListener('keyup', function(e) {
+    obj.val = e.target.value;
+  })
+</script>
+</html>
+```
+
+### 原理
+
+```html
+<div id="app">
+  <input type="text" v-model="name" />
+  {{name}}
+</div>
+```
+
+```js
+let vm = new Vue({
+  el: 'app',
+  data: {
+    name: 'tianxin'
+  }
+});
+```
+
+拆分任务：
+
+1. 将 vue 中的 data 的内容绑定到输入框和文本节点中。
+
+2. 当文本框的内容改变时，vue 实例中的 data 也同时发生改变。
+
+3. 当 data 中的内容发生该改变时，输入框和文本节点中的内容也发生改变。
+
+#### 绑定内容
+
+首先，需要将 dom 节点都先放入一个 **DocumentFragment(碎片化文档)** 容器中。**注意，使用 appendChild 方法将原 dom 树中的节点添加到 DocumentFragment 中时，会删除原来的节点。**
+
+```js
+// 数据劫持
+let dom = nodeToFragment(document.getElementById('app'));
+console.log(dom);
+console.log(document.getElementById('app'));
+function nodeToFragment(node) {
+  let fragment = document.createDocumentFragment();
+  let child;
+  while(child = node.firstChild) {
+    fragment.appendChild(child);
+  }
+
+  return fragment;
+}
+```
+
+将 vue data 中的内容绑定到 input 和 文本节点中，现在已经获取到了 div 的所有子节点在 DocumentFragment 中，需要对每一个节点进行处理，看是不是有跟 vm 实例中有关联的内容
+
+```js
+// 编译函数
+  function compile(node, vm) {
+    // 元素节点
+    if (node.nodeType === 1) {
+      var attrs = node.attributes;
+      for (let i = 0; i < attrs.length; i++) {
+        if (attrs[i].nodeName === 'v-model') {
+          var name = attrs[i].nodeValue;
+          node.value = vm.data[name];
+          node.removeAttribute('v-model');
+        }
+      }
+    }
+
+    // 文本节点
+    if (node.nodeType === 3) {
+      let reg = /\{\{(.*)\}\}/;
+      if (reg.test(node.nodeValue)) {
+        var name = RegExp.$1;
+        name = name.trim();
+        node.nodeValue = vm.data[name];
+      }
+    }
+  }
+```
+
+#### view -> model
+
+输入框的输入数据改变时，如何改变 data。我们通过事件监听器 keyup、input等，来获取到最新的 value，然后通过 Object.defineProperty 将获取的最新的 value，赋值给实例 vm 的 name，我们把 vm 实例中的 data 下的 name 通过 Object.defineProperty 设置为访问器属性，这样给 vm.name 赋值，就触发了 set。set 函数的作用是更新 data 中的 text。
+
+实现一个响应式监听属性的函数
+
+```js
+function defineReactive(obj, key, val) {
+  console.log(obj);
+  Object.defineProperty(obj, key, {
+    get: function() {
+      return val;
+    },
+    set: function(newVal) {
+      if (val === newVal) {
+        return;
+      }
+      val = newVal;
+      console.log('新值：', val);
+    }
+  })
+}
+```
+
+实现一个观察者，对于一个实例每一个属性值进行观察
+
+```js
+function observe(obj, vm) {
+  for (let key of Object.keys(obj)) {
+    defineReactive(vm, key, obj[key]);
+    console.log(obj);
+  }
+}
+```
+
+改写编译函数，注意由于改成了访问器属性，访问的方法也产生变化，同时添加了事件监听器，把实例的 name 值随时更新
+
+```js
+function compile(node, vm) {
+  // 元素节点
+  if (node.nodeType === 1) {
+    var attrs = node.attributes;
+    for (let i = 0; i < attrs.length; i++) {
+      if (attrs[i].nodeName === 'v-model') {
+        var name = attrs[i].nodeValue;
+        node.addEventListener('input', function(e) {
+          vm[name] = e.target.value;
+        })
+        node.value = vm[name];
+        node.removeAttribute('v-model');
+      }
+    }
+  }
+
+  // 文本节点
+  if (node.nodeType === 3) {
+    let reg = /\{\{(.*)\}\}/;
+    if (reg.test(node.nodeValue)) {
+      var name = RegExp.$1;
+      name = name.trim();
+      node.nodeValue = vm[name];
+    }
+  }
+}
+```
+
+#### model -> view
+
+通过修改 vm 实例的属性，改变输入框的内容与文本节点的内容。
+当我们修改输入框改变 vm 实例的属性，这里是1对1的。如果页面中有多处用到 data 中的属性，这里就是1对多的，也就是说，改变1个 model 的值可以改变多个 view 中的值。
+
+
+完整代码
+``` html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>JavaScript</title>
+</head>
+<body>
+  <div id="app">
+    <input type="text" v-model="name" />
+    {{name}}
+  </div>
+</body>
+<script>
+  function Vue(options) {
+    this.data = options.data;
+    const data = this.data;
+    observe(data, this);
+
+    const id = options.el;
+    const dom = nodeToFragment(document.getElementById(id), this);
+    console.log(dom);
+    document.getElementById(id).appendChild(dom);
+  }
+
+  function nodeToFragment(node, vm) {
+    let fragment = document.createDocumentFragment();
+    let child;
+    while (child = node.firstChild) {
+      complie(child, vm);
+      fragment.appendChild(child);
+    }
+
+    return fragment;
+  }
+
+  /* 编译函数 */
+  function complie(node, vm) {
+    if (node.nodeType === 1) {
+      let attrs = node.attributes;
+      for (let i = 0; i < attrs.length; i++) {
+        if (attrs[i].nodeName === 'v-model') {
+          let name = attrs[i].nodeValue;
+          node.addEventListener('input', function(e){
+            vm[name] = e.target.value;
+          });
+          node.value = vm[name];
+          node.removeAttribute('v-nmodel');
+        }
+      }
+    }
+
+    if (node.nodeType === 3) {
+      let reg = /\{\{(.*)\}\}/;
+      if (reg.test(node.nodeValue)) {
+        let name = RegExp.$1;
+        name = name.trim();
+        new Watcher(vm, node, name);
+      }
+    }
+  }
+
+  /* 响应式监听数据函数 */
+  function defineReactive(obj, key, val) {
+    let dep = new Dep();
+    Object.defineProperty(obj, key, {
+      get: function() {
+        if (Dep.target) {
+          dep.addSubs(Dep.target);
+        }
+        return val;
+      },
+      set: function(newVal) {
+        if (val === newVal) {
+          return;
+        }
+
+        val = newVal;
+        dep.notify();
+      }
+    })
+  }
+
+  /* 实现一个观察者，对每一个实例的属性进行观察 */
+  function observe(obj, vm) {
+    for (let key of Object.keys(obj)) {
+      defineReactive(vm, key, obj[key]);
+    }
+  }
+
+  function Watcher(vm, node, name) {
+    Dep.target = this;
+    this.vm = vm;
+    this.node = node;
+    this.name = name;
+    this.update();
+    Dep.target = null;
+  }
+
+  Watcher.prototype = {
+    get() {
+      this.value = this.vm[this.name];
+    },
+    update() {
+      this.get();
+      this.node.nodeValue = this.value;
+    }
+  }
+
+  function Dep() {
+    this.subs = []
+  }
+
+  Dep.prototype = {
+    addSubs(sub) {
+      this.subs.push(sub);
+    },
+    notify() {
+      this.subs && this.subs.forEach(sub => {
+        sub.update();
+      })
+    }
+  }
+
+  let vm = new Vue({
+    el: 'app',
+    data: {
+      name: 'tianxin'
+    }
+  });
+
+</script>
+</html>
+```
